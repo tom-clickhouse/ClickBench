@@ -6,7 +6,5 @@ db.hits.aggregate([{ $group: { _id: '$UserID' } }, { $count: 'value' }, { $proje
 db.hits.aggregate([{ $group: { _id: '$SearchPhrase' } }, { $count: 'value' }, { $project: { key: null, value: 1, } }], {allowDiskUse: true});
 db.hits.aggregate([{$group: {_id: null, min: {$min: '$EventDate'}, max: {$max: '$EventDate'}}}]);
 db.hits.aggregate([{$match: {AdvEngineID: {$ne: 0}}}, { $group: { _id: '$AdvEngineID', c: {$sum: 1} } }, { $sort: { c: -1 } }]);
-
-//db.hits.aggregate([{ $group: { _id: {u: '$UserID', r: '$RegionID'} } }, { $count: 'value' }, { $group: { _id: '$r', c: {$sum: 1} } }, { $sort: {c: -1} }, { $limit: 10 }], {allowDiskUse: true});
-
-SELECT RegionID, COUNT(DISTINCT UserID) AS u FROM hits GROUP BY RegionID ORDER BY u DESC LIMIT 10;
+db.hits.aggregate([{ $group: { _id: { RegionID: '$RegionID', UserID: '$UserID' } } }, { $group: { _id: { RegionID: '$_id.RegionID' }, u: { $sum: 1 } } }, { $sort: { u: -1 } }, { $limit : 10 }, { $project: { RegionID:'$_id.RegionID', u:'$u', _id:0 } }], {allowDiskUse: true});
+db.hits.aggregate([{ $group: { _id: { RegionID: '$RegionID', UserID: '$UserID' }, s: { $sum: '$AdvEngineID' }, c: { $sum: 1 }, ResolutionWidths: { $push: '$ResolutionWidth' } } }, { $group: { _id: { RegionID: '$_id.RegionID' }, s: { $sum: '$s' }, c: {$sum: '$c'}, ResolutionWidths: { $push: '$ResolutionWidths' }, d:  {$sum: 1 } } }, { $addFields: { ResolutionWidths: { $reduce: { input: '$ResolutionWidths', initialValue: [], in: { $concatArrays: ['$$value', '$$this']} } } } }, { $addFields: {a: {$avg: '$ResolutionWidths' } } }, { $sort: {c: -1} }, { $limit : 10 }, { $project: { RegionID: '$_id.RegionID', s:'$s', c:'$c', a:'$a', d:'$d', _id:0 } }], {allowDiskUse: true});
